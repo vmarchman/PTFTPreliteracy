@@ -1,0 +1,323 @@
+---
+title: "PT/FT Group Differences Analyses - Preliteracy outcomes"
+author: "Virginia Marchman"
+date: "3/30/2023, updated 4/15/2023"
+output:
+  html_document: 
+   toc: true
+   toc_float: true
+---
+
+```{r, echo = F}
+library(knitr)
+opts_chunk$set(echo=TRUE, 
+               warning=FALSE, message=FALSE, 
+               cache=FALSE)
+options(width = 100)
+```
+
+# This is the code to generate the analyses in Marchman, V.A., Ashland, M., Loi, E.C., Shannon, K. A., Munevar, M., Fernald, A, & Feldman, H. M. Early language processing efficiency and pre-literacy outcomes in children born full term and preterm
+
+
+Load libraries and set theme
+```{r}
+library(tidyverse)
+library(effsize)
+library(stargazer)
+library(psych)
+library(powerAnalysis)
+
+theme_set(theme_bw())
+```
+
+
+# Data prepping
+### Load data
+```{r}
+
+setwd = "G:/Shared drives/Lang Learning Lab Management Archived/Studies Archive/PDEV Series/PDEV/PDEV Papers/PTFT Group Differences"
+
+PTFTlit <- read_csv("PTFT_data_literacy.csv")
+
+PTFTlit <- as.data.frame(PTFTlit)
+```
+
+### Check data
+```{r}
+# Sex - 46 females, 49 males
+PTFTlit %>% 
+  group_by(Group, Sex) %>% 
+  count()
+```
+
+### Transform variables (e.g., character to factor)
+```{r}
+PTFTlit <- PTFTlit %>% 
+  mutate(SubjectID = factor(SubjectID),
+         Sex = factor(Sex), Group = factor(Group))
+```
+
+#Demographic variables
+### Descriptive statistics - t-tests by Birth Group - Table 1
+
+```{r}
+
+t.test(GADays ~ Group, data = PTFTlit, var.equal = FALSE)
+t.test(BirthWtGm ~ Group, data = PTFTlit, var.equal = FALSE)
+t.test(MomEdu ~ Group, data = PTFTlit, var.equal = FALSE)
+t.test(HI_SES ~ Group, data = PTFTlit, var.equal = FALSE)
+t.test(AgeAtFirstVisit_PDEV18ATL318C ~ Group, data = PTFTlit, var.equal = FALSE)
+t.test(AgeAtFirstVisit_PDEV54CTL354C ~ Group, data = PTFTlit, var.equal = FALSE)
+
+```
+### Number of trials with known words by birthgroup.
+```{r}
+
+
+PTFTlit %>% group_by(Group) %>%
+  summarise(mean_Known = mean(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A, na.rm = T),
+            sd_Known = sd(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A, na.rm = T),
+            min_Known = min(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A, na.rm = T),
+            max_Known = max(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A, na.rm = T))
+
+t.test(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A ~ Group, data = PTFT)
+
+```
+
+### Number of trials for RT and test for differences between birthgroup.
+```{r}
+
+PTFTlit %>% group_by(Group) %>%
+  summarise(mean_trials = mean(DRTAB183001800knownnumPDEV18ATL318C, na.rm = T), 
+            sd_trials = sd(DRTAB183001800knownnumPDEV18ATL318C, na.rm = T),
+            min_trials = min(DRTAB183001800knownnumPDEV18ATL318C, na.rm = T), 
+            max_trials = max(DRTAB183001800knownnumPDEV18ATL318C, na.rm = T))
+
+t.test(DRTAB183001800knownnumPDEV18ATL318C ~ Group, data = PTFT)
+
+```
+
+
+#Number of trials for Accuracy and test for differences between birthgroups.
+```{r}
+
+PTFTlit %>% group_by(Group) %>%
+  summarise(mean_trials = mean(AccAB183001800knownnumPDEV18ATL318C, na.rm = T), 
+            sd_trials = sd(AccAB183001800knownnumPDEV18ATL318C, na.rm = T),
+            min_trials = min(AccAB183001800knownnumPDEV18ATL318C, na.rm = T), 
+            max_trials = max(AccAB183001800knownnumPDEV18ATL318C, na.rm = T))
+
+t.test(AccAB183001800knownnumPDEV18ATL318C ~ Group, data = PTFTlit)
+
+```
+
+###LWL measures at 18 months - Table 2
+
+```{r}
+
+## Accuracy - t-test by group
+
+t.test(AccAB183001800knownPDEV18ATL318C ~ Group, data = PTFTlit)
+
+## RT - t-test by group
+
+t.test(RT18A18C_NO1RT ~ Group, data = PTFTlit)
+
+```
+
+# Child language measures at 4.5 years - Table 2
+```{r}
+
+PTFTlit %>% group_by(Group) %>%
+  summarise(
+        mean_PrintK = mean(PrintKnowledge_PDEV54TL354_TOPEL_standard, na.rm = T), 
+        sd_PrintK = sd(PrintKnowledge_PDEV54TL354_TOPEL_standard, na.rm = T),
+        mean_Phon = mean(PhonAwareness_PDEV54TL354_TOPEL_standard, na.rm = T), 
+        sd_Phon = sd(PhonAwareness_PDEV54TL354_TOPEL_standard, na.rm = T),
+        mean_Exp = mean(CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard, na.rm = T), 
+        sd_Exp = sd(CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard, na.rm = T))
+
+
+# Print Knowledge
+t.test(PrintKnowledge_PDEV54TL354_TOPEL_standard ~ Group, data = PTFTlit)
+
+# Phonological Awareness
+t.test(PhonAwareness_PDEV54TL354_TOPEL_standard ~ Group, data = PTFTlit)
+
+# CELF
+t.test(CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard ~ Group, data = PTFTlit)
+
+```
+
+# Regression models
+### Models 1a to 1e - Print Knowledge - Table 3
+```{r}
+# covariates SES and Age and Group
+
+m1a <- lm(PrintKnowledge_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C + 
+            HI_SES + Group, data = PTFTlit)
+
+# covariates + Group + Accuracy
+m1b <- lm(PrintKnowledge_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C +
+            HI_SES + Group + AccAB183001800knownPDEV18ATL318C, data = PTFTlit)
+
+# covariates + Group + Accuracy + Acc x Group
+m1c <- lm(PrintKnowledge_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C +
+            HI_SES + Group * AccAB183001800knownPDEV18ATL318C, data = PTFTlit)
+
+# covariates + Group + RT
+m1d <- lm(PrintKnowledge_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C + 
+            HI_SES + Group + RT18A18C_NO1RT, data = PTFTlit)
+
+# covariates + Group + RT + RT x Group
+m1e <- lm(PrintKnowledge_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C + 
+            HI_SES + Group * RT18A18C_NO1RT, data = PTFTlit)
+
+# comparisons
+anova(m1a, m1b)
+anova(m1b, m1c)
+anova(m1a, m1d)
+anova(m1d, m1e)
+
+stargazer(m1a, m1b, m1c, m1d, m1e, type = "text",
+         star.char = c(".","*","**","***"),
+         star.cutoffs = c(.1, .05, .01, .001),
+         notes = c(". p<0.1; * p<0.05; ** p<0.01; *** p<0.001"),
+         notes.append = F,
+         digits = 2, # change to 3 digits to get r2
+         dep.var.labels = c("Print Knowledge"),
+         covariate.labels=c("Age at test", "SES",
+                            "Group",
+                            "Acc x Group",
+                            "RT",
+                            "RT x Group"))
+
+```
+### Models 2a to 2e - Phonological Awareness - Table 4
+```{r}
+
+# covariates SES and Age and Group
+
+m2a <- lm(PhonAwareness_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C + 
+            HI_SES + Group, data = PTFTlit)
+
+# covariates + Group + Accuracy
+m2b <- lm(PhonAwareness_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C +
+            HI_SES + Group + AccAB183001800knownPDEV18ATL318C, data = PTFTlit)
+
+# covariates + Group + Accuracy + Acc x Group
+m2c <- lm(PhonAwareness_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C +
+            HI_SES + Group * AccAB183001800knownPDEV18ATL318C, data = PTFTlit)
+
+# covariates + Group + RT
+m2d <- lm(PhonAwareness_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C + 
+            HI_SES + Group + RT18A18C_NO1RT, data = PTFTlit)
+
+# covariates + Group + RT + RT x Group
+m2e <- lm(PhonAwareness_PDEV54TL354_TOPEL_standard ~ AgeAtFirstVisit_PDEV54CTL354C + 
+            HI_SES + Group * RT18A18C_NO1RT, data = PTFTlit)
+
+# comparisons
+anova(m2a, m2b)
+anova(m2b, m2c)
+anova(m2a, m2d)
+anova(m2d, m2e)
+
+stargazer(m2a, m2b, m2c, m2d, m2e, type = "text",
+         star.char = c(".","*","**","***"),
+         star.cutoffs = c(.1, .05, .01, .001),
+         notes = c(". p<0.1; * p<0.05; ** p<0.01; *** p<0.001"),
+         notes.append = F,
+         digits = 3, # change to 3 digits to get r2
+         dep.var.labels = c("Phonological Awareness"),
+         covariate.labels=c("Age at test", "SES",
+                            "Group",
+                            "Acc x Group",
+                            "RT",
+                            "RT x Group"))
+                            
+```
+# Running mediation using Process in R - Table 5
+## Model syntax - model 4
+```{r}
+
+# Must run process macro in process.R prior to running code (a user-defined macro)
+# The simplest process model syntax is here:
+# process (data = my_data_frame, y = "my_DV", x = "my_IV", m ="my_mediator", model = 4)
+
+# with covariates and other parameters specified
+# process (data = my_data_frame, y = "my_DV", x = "my_IV", m ="my_mediator", model = 4, effsize =1, total =1, stand =1, cov = c("my_covariate1", "my_covariate2"), boot = 10000 , modelbt = 1, seed = 654321)
+```
+
+## Print Knowledge x Accuracy, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
+
+```{r}
+process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", model = 4, effsize =1, total =1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES", "Groupnum"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+## Print Knowledge x RT, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
+```{r}
+
+process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", model = 4, effsize =1, total =1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES", "Groupnum"), boot = 10000 , modelbt = 1, seed = 654321)
+```
+## Phonological Awareness x Accuracy, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
+```{r}
+
+process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", model = 4, effsize =1, total =1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES", "Groupnum"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+## Phonological Awareness x RT, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
+```{r}
+
+process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", model = 4, effsize =1, total =1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES", "Groupnum"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+
+# Moderated Mediation - does group moderate the mediation effects?
+## Sample syntax: Model 8
+```{r}
+
+## PROCESS Model 8
+## process (data = my_data_frame, y = "DV", x = "IV", m = "MED", w = "MOD", model = 8, cov = "COV", center = 2, moments = 1, modelbt = 1, boot = 10000, seed = 654321)
+
+```
+## Print Knowledge x Accuracy, CELF as mediator, with age at test, SES as covariates, group as moderator
+```{r}
+process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 8, effsize =1, total =1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+## Print Knowledge x RT, CELF as mediator, with age at test, SES as covariates, group as moderator
+```{r}
+
+process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 8, effsize =1, total =1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
+  
+```
+## Phonological Awareness x Accuracy, CELF as mediator, with age at test, SES as covariates, group as moderator
+```{r}
+
+process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 8, effsize =1, total =1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+## Phonological Awareness x RT, CELF as mediator, with age at test, SES as covariates, group as moderator
+```{r}
+
+process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 8, effsize =1, total =1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+ 
