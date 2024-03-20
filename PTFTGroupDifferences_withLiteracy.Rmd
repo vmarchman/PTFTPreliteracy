@@ -1,7 +1,7 @@
 ---
 title: "PT/FT Group Differences Analyses - Preliteracy outcomes"
 author: "Virginia Marchman"
-date: "3/30/2023, updated 4/15/2023"
+date: "3/30/2023, updated 4/15/2023, 11/28/2023, 12/18/2023, 3/14/24"
 output:
   html_document: 
    toc: true
@@ -21,11 +21,22 @@ options(width = 100)
 
 Load libraries and set theme
 ```{r}
+
+install.packages("tidyverse")
+install.packages("effsize")
+install.packages("psych")
+install.packages("rmarkdown")
+install.packages("wordbankr")
+install.packages("stargazer")
+install.packages("knitr")
+
 library(tidyverse)
 library(effsize)
 library(stargazer)
 library(psych)
-library(powerAnalysis)
+library(rockchalk)
+
+#to run mediation models with process, must also run process.R.  Stored in process folder.
 
 theme_set(theme_bw())
 ```
@@ -35,44 +46,63 @@ theme_set(theme_bw())
 ### Load data
 ```{r}
 
-setwd = "G:/Shared drives/Lang Learning Lab Management Archived/Studies Archive/PDEV Series/PDEV/PDEV Papers/PTFT Group Differences"
-
 PTFTlit <- read_csv("PTFT_data_literacy.csv")
 
 PTFTlit <- as.data.frame(PTFTlit)
 ```
 
-### Check data
-```{r}
-# Sex - 46 females, 49 males
-PTFTlit %>% 
-  group_by(Group, Sex) %>% 
-  count()
-```
-
-### Transform variables (e.g., character to factor)
+### Transform variables (character to factor)
 ```{r}
 PTFTlit <- PTFTlit %>% 
   mutate(SubjectID = factor(SubjectID),
          Sex = factor(Sex), Group = factor(Group))
 ```
-
-#Demographic variables
-### Descriptive statistics - t-tests by Birth Group - Table 1
-
+### Check data
 ```{r}
+# Sex - 46 females, 49 males
 
-t.test(GADays ~ Group, data = PTFTlit, var.equal = FALSE)
-t.test(BirthWtGm ~ Group, data = PTFTlit, var.equal = FALSE)
-t.test(MomEdu ~ Group, data = PTFTlit, var.equal = FALSE)
-t.test(HI_SES ~ Group, data = PTFTlit, var.equal = FALSE)
-t.test(AgeAtFirstVisit_PDEV18ATL318C ~ Group, data = PTFTlit, var.equal = FALSE)
-t.test(AgeAtFirstVisit_PDEV54CTL354C ~ Group, data = PTFTlit, var.equal = FALSE)
+PTFTlit %>% 
+  group_by(Group, Sex) %>% 
+  count()
 
 ```
-### Number of trials with known words by birthgroup.
+
+#Descriptives
+### Medical risk in PT group
+
 ```{r}
 
+PTFTlit %>% group_by(Group) %>%
+  summarise(mean_medrisk = mean(MedRiskScore, na.rm = T),
+            SD_medrisk = SD(MedRiskScore, na.rm = T))
+
+```
+### Table 1 - Other medical and demographic variables; chi-square and t-tests by Birth Group
+```{r}
+
+chisq.test(PTFTlit$Group, PTFTlit$Sex)
+
+t.test(GADays ~ Group, data = PTFTlit, var.equal = FALSE)
+effsize::cohen.d(PTFTlit$GADays, PTFTlit$Group)
+
+t.test(BirthWtGm ~ Group, data = PTFTlit, var.equal = FALSE)
+effsize::cohen.d(PTFTlit$BirthWtGm, PTFTlit$Group)
+
+t.test(MomEdu ~ Group, data = PTFTlit, var.equal = FALSE)
+effsize::cohen.d(PTFTlit$MomEdu, PTFTlit$Group)
+
+t.test(HI_SES ~ Group, data = PTFTlit, var.equal = FALSE)
+effsize::cohen.d(PTFTlit$HI_SES, PTFTlit$Group)
+
+t.test(AgeAtFirstVisit_PDEV18ATL318C ~ Group, data = PTFTlit, var.equal = FALSE)
+effsize::cohen.d(PTFTlit$AgeAtFirstVisit_PDEV18ATL318C, PTFTlit$Group)
+
+t.test(AgeAtFirstVisit_PDEV54CTL354C ~ Group, data = PTFTlit, var.equal = FALSE)
+effsize::cohen.d(PTFTlit$AgeAtFirstVisit_PDEV54CTL354C, PTFTlit$Group)
+
+```
+## Number of trials with known words in LWL task by birthgroup.
+```{r}
 
 PTFTlit %>% group_by(Group) %>%
   summarise(mean_Known = mean(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A, na.rm = T),
@@ -80,11 +110,12 @@ PTFTlit %>% group_by(Group) %>%
             min_Known = min(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A, na.rm = T),
             max_Known = max(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A, na.rm = T))
 
-t.test(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A ~ Group, data = PTFT)
+t.test(PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A ~ Group, data = PTFTlit)
+effsize::cohen.d(PTFTlit$PeekVocabChecklist_UnderstandsKnownWords_TL318PDEV18A, PTFTlit$Group)
 
 ```
 
-### Number of trials for RT and test for differences between birthgroup.
+## Number of trials for RT in LWL task and test for differences between birthgroups.
 ```{r}
 
 PTFTlit %>% group_by(Group) %>%
@@ -93,12 +124,12 @@ PTFTlit %>% group_by(Group) %>%
             min_trials = min(DRTAB183001800knownnumPDEV18ATL318C, na.rm = T), 
             max_trials = max(DRTAB183001800knownnumPDEV18ATL318C, na.rm = T))
 
-t.test(DRTAB183001800knownnumPDEV18ATL318C ~ Group, data = PTFT)
+t.test(DRTAB183001800knownnumPDEV18ATL318C ~ Group, data = PTFTlit)
+effsize::cohen.d(PTFTlit$DRTAB183001800knownnumPDEV18ATL318C, PTFTlit$Group)
 
 ```
 
-
-#Number of trials for Accuracy and test for differences between birthgroups.
+##Number of trials for Accuracy in LWL task and test for differences between birthgroups.
 ```{r}
 
 PTFTlit %>% group_by(Group) %>%
@@ -108,24 +139,27 @@ PTFTlit %>% group_by(Group) %>%
             max_trials = max(AccAB183001800knownnumPDEV18ATL318C, na.rm = T))
 
 t.test(AccAB183001800knownnumPDEV18ATL318C ~ Group, data = PTFTlit)
-
+effsize::cohen.d(PTFTlit$AccAB183001800knownnumPDEV18ATL318C, PTFTlit$Group)
 ```
 
-###LWL measures at 18 months - Table 2
+##Table 2 - LWL measures at 18 months
 
 ```{r}
 
 ## Accuracy - t-test by group
 
 t.test(AccAB183001800knownPDEV18ATL318C ~ Group, data = PTFTlit)
+effsize::cohen.d(PTFTlit$AccAB183001800knownPDEV18ATL318C, PTFTlit$Group)
+
 
 ## RT - t-test by group
 
 t.test(RT18A18C_NO1RT ~ Group, data = PTFTlit)
+effsize::cohen.d(PTFTlit$RT18A18C_NO1RT, PTFTlit$Group)
 
 ```
 
-# Child language measures at 4.5 years - Table 2
+##Table 2 - Child language measures at 4.5 years
 ```{r}
 
 PTFTlit %>% group_by(Group) %>%
@@ -140,17 +174,20 @@ PTFTlit %>% group_by(Group) %>%
 
 # Print Knowledge
 t.test(PrintKnowledge_PDEV54TL354_TOPEL_standard ~ Group, data = PTFTlit)
+effsize::cohen.d(PTFTlit$PrintKnowledge_PDEV54TL354_TOPEL_standard, PTFTlit$Group)
 
 # Phonological Awareness
 t.test(PhonAwareness_PDEV54TL354_TOPEL_standard ~ Group, data = PTFTlit)
+effsize::cohen.d(PTFTlit$PhonAwareness_PDEV54TL354_TOPEL_standard, PTFTlit$Group)
 
 # CELF
 t.test(CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard ~ Group, data = PTFTlit)
+effsize::cohen.d(PTFTlit$CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard, PTFTlit$Group)
 
 ```
 
 # Regression models
-### Models 1a to 1e - Print Knowledge - Table 3
+## Table 3 - Models 1a to 1e - Print Knowledge
 ```{r}
 # covariates SES and Age and Group
 
@@ -191,9 +228,47 @@ stargazer(m1a, m1b, m1c, m1d, m1e, type = "text",
                             "Acc x Group",
                             "RT",
                             "RT x Group"))
+```
+####testing moderation with Process (model 1) - Print Knowledge - Acc x group
+```{r}
+
+process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
+  w = "Groupnum", model = 1, effsize =1, total =1, plot = 1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
 
 ```
-### Models 2a to 2e - Phonological Awareness - Table 4
+####testing moderation with Process (model 1) - Print knowledge - RT x group
+```{r}
+
+process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
+  w = "Groupnum", model = 1, effsize =1, total =1, plot = 1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+#### Take predicted values from Process and put in csv for plotting, then plot
+```{r}
+
+RT_Print_Plot <- read.csv("RT_Print_Plot.csv")
+
+ggplot(data = RT_Print_Plot, aes(x = RT, y = PrintKnowledge, linetype = factor(Group))) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1.3) +
+  theme_bw() +
+  theme(panel.grid.major= element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + 
+ #theme(legend.position = "none") +
+ scale_x_continuous(limits = c(500,900), breaks=seq(500,900,100)) +
+ scale_y_continuous(limits = c(85, 120), breaks = seq(85,120,5)) +
+ scale_linetype(labels = c("FT", "PT")) +
+  labs(
+    x = "Language Processing Speed (RT) in ms (18 months)", 
+    y = "Print \n Knowledge\n Standard Score\n (4 1/2 years)", 
+    linetype = "Group")+
+  theme(axis.title.y = element_text(angle = 0, vjust = 0.5)) +
+  theme(text = element_text(size = 16))
+
+ggsave("Figure2_RT_Print.jpg", height = 8, width = 11, units = "in", dpi = 300)
+
+```
+## Table 4 - Models 2a to 2e - Phonological Awareness
 ```{r}
 
 # covariates SES and Age and Group
@@ -237,7 +312,46 @@ stargazer(m2a, m2b, m2c, m2d, m2e, type = "text",
                             "RT x Group"))
                             
 ```
-# Running mediation using Process in R - Table 5
+###testing moderation with Process (model 1) - Phonological Awareness - Acc x group
+```{r}
+
+process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
+  w = "Groupnum", model = 1, effsize =1, total =1, plot = 1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+###testing moderation with Process (model 1) - Phonological Awareness - RT x group
+```{r}
+
+process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
+  w = "Groupnum", model = 1, effsize =1, total =1, plot = 1, 
+  cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
+
+```
+### Take predicted values from Process and put in csv for plotting, then plot
+```{r}
+
+RT_Phon_Plot <- read.csv("RT_Phon_Plot.csv")
+
+ggplot(data = RT_Phon_Plot, aes(x = RT, y = PhonAware, linetype = factor(Groupnum))) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1.3) +
+  theme_bw() +
+  theme(panel.grid.major= element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + 
+ #theme(legend.position = "none") +
+ scale_x_continuous(limits = c(500,900), breaks=seq(500,900,100)) +
+ scale_y_continuous(limits = c(85, 120), breaks = seq(85,120,5)) +
+ scale_linetype(labels = c("FT", "PT")) +
+  labs(
+    x = "Language Processing Speed (RT) in ms (18 months)", 
+    y = "Phonological \n Awareness\n Standard Score\n (4 1/2 years)", 
+    linetype = "Group")+
+  theme(axis.title.y = element_text(angle = 0, vjust = 0.5)) +
+  theme(text = element_text(size = 16))
+
+ggsave("Figure3_RT_Phon.jpg", height = 8, width = 11, units = "in", dpi = 300)
+
+```
+# Table 5 - Running mediation using Process in R
 ## Model syntax - model 4
 ```{r}
 
@@ -249,7 +363,7 @@ stargazer(m2a, m2b, m2c, m2d, m2e, type = "text",
 # process (data = my_data_frame, y = "my_DV", x = "my_IV", m ="my_mediator", model = 4, effsize =1, total =1, stand =1, cov = c("my_covariate1", "my_covariate2"), boot = 10000 , modelbt = 1, seed = 654321)
 ```
 
-## Print Knowledge x Accuracy, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
+### Print Knowledge x Accuracy, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
 
 ```{r}
 process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
@@ -257,14 +371,14 @@ process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "A
   cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES", "Groupnum"), boot = 10000 , modelbt = 1, seed = 654321)
 
 ```
-## Print Knowledge x RT, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
+### Print Knowledge x RT, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
 ```{r}
 
 process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
   m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", model = 4, effsize =1, total =1, 
   cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES", "Groupnum"), boot = 10000 , modelbt = 1, seed = 654321)
 ```
-## Phonological Awareness x Accuracy, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
+### Phonological Awareness x Accuracy, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
 ```{r}
 
 process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
@@ -272,7 +386,7 @@ process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "Ac
   cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES", "Groupnum"), boot = 10000 , modelbt = 1, seed = 654321)
 
 ```
-## Phonological Awareness x RT, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
+### Phonological Awareness x RT, CELF as mediator, with age at test, SES, and group (must be numeric) as covariates
 ```{r}
 
 process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
@@ -280,44 +394,42 @@ process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "RT
   cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES", "Groupnum"), boot = 10000 , modelbt = 1, seed = 654321)
 
 ```
-
 # Moderated Mediation - does group moderate the mediation effects?
-## Sample syntax: Model 8
+## Model syntax - Model 58 (moderator on a and b paths)
 ```{r}
 
-## PROCESS Model 8
-## process (data = my_data_frame, y = "DV", x = "IV", m = "MED", w = "MOD", model = 8, cov = "COV", center = 2, moments = 1, modelbt = 1, boot = 10000, seed = 654321)
+## Example syntax PROCESS Model 58
+## process (data = my_data_frame, y = "DV", x = "IV", m = "MED", w = "MOD", model = 58, cov = "COV", center = 2, moments = 1, modelbt = 1, boot = 10000, seed = 654321)
 
 ```
-## Print Knowledge x Accuracy, CELF as mediator, with age at test, SES as covariates, group as moderator
+### Print Knowledge x Accuracy, CELF as mediator, with age at test, SES as covariates, group as moderator
 ```{r}
 process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
-  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 8, effsize =1, total =1, 
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 58, effsize =1, total =1, 
   cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
 
 ```
-## Print Knowledge x RT, CELF as mediator, with age at test, SES as covariates, group as moderator
+### Print Knowledge x RT, CELF as mediator, with age at test, SES as covariates, group as moderator
 ```{r}
 
 process (data = PTFTlit, y = "PrintKnowledge_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
-  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 8, effsize =1, total =1, 
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 58, effsize =1, total =1, 
   cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
   
 ```
-## Phonological Awareness x Accuracy, CELF as mediator, with age at test, SES as covariates, group as moderator
+### Phonological Awareness x Accuracy, CELF as mediator, with age at test, SES as covariates, group as moderator
 ```{r}
 
 process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "AccAB183001800knownPDEV18ATL318C",
-  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 8, effsize =1, total =1, 
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 58, effsize =1, total =1, 
   cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
 
 ```
-## Phonological Awareness x RT, CELF as mediator, with age at test, SES as covariates, group as moderator
+### Phonological Awareness x RT, CELF as mediator, with age at test, SES as covariates, group as moderator
 ```{r}
 
 process (data = PTFTlit, y = "PhonAwareness_PDEV54TL354_TOPEL_standard", x = "RT18A18C_NO1RT",
-  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 8, effsize =1, total =1, 
+  m = "CELF_Exp_PDEV54TL354_CELF_ExpressiveLanguage_standard", w = "Groupnum", model = 58, effsize =1, total =1, 
   cov = c("AgeAtFirstVisit_PDEV54CTL354C", "HI_SES"), boot = 10000 , modelbt = 1, seed = 654321)
 
 ```
- 
